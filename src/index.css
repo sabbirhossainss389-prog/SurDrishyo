@@ -1,0 +1,52 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --font-display: 'Outfit', 'Hind Siliguri', sans-serif;
+    --font-sans: 'Hind Siliguri', 'Outfit', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  html {
+    font-family: var(--font-sans);
+    background-color: #0a0b0e;
+    color: #f1f5f9;
+  }
+
+  h1, h2, h3, .font-display {
+    font-family: var(--font-display);
+  }
+
+  .font-mono-nums {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Custom sleek dark scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0a0b0e;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #232734;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #33394c;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

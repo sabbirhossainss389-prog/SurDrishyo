@@ -1,0 +1,130 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User preferences and personalized feed profile stored privately for the signed-in user.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "displayName": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "photoURL": { "type": "string", "maxLength": 500 },
+        "preferredCategories": { "type": "array", "description": "Up to 10 selected categories for customized feed." },
+        "recentSearches": { "type": "array", "description": "Up to 10 recent search terms." },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "displayName", "preferredCategories", "createdAt", "updatedAt"]
+    },
+    "MediaItem": {
+      "title": "MediaItem",
+      "description": "Uploaded or published video or audio track (song/ghazal) in the platform.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "description": { "type": "string", "maxLength": 2000 },
+        "mediaType": { "type": "string", "enum": ["video", "audio"] },
+        "sourceType": { "type": "string", "enum": ["upload", "youtube"] },
+        "mediaUrl": { "type": "string", "minLength": 1, "maxLength": 600 },
+        "thumbnailUrl": { "type": "string", "maxLength": 600 },
+        "category": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "artistOrChannel": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "durationSeconds": { "type": "number" },
+        "durationLabel": { "type": "string", "maxLength": 20 },
+        "tags": { "type": "array" },
+        "authorId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "authorName": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "authorPhoto": { "type": "string", "maxLength": 500 },
+        "viewsCount": { "type": "number" },
+        "likesCount": { "type": "number" },
+        "commentsCount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "mediaType", "sourceType", "mediaUrl", "category", "artistOrChannel", "durationSeconds", "durationLabel", "authorId", "authorName", "viewsCount", "likesCount", "commentsCount", "createdAt", "updatedAt"]
+    },
+    "MediaLike": {
+      "title": "MediaLike",
+      "description": "User like record on a platform MediaItem.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "mediaId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "mediaId", "createdAt"]
+    },
+    "Comment": {
+      "title": "Comment",
+      "description": "User comment on either an uploaded MediaItem or a YouTube video.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "targetId": { "type": "string", "minLength": 1, "maxLength": 140, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "targetType": { "type": "string", "enum": ["media", "youtube"] },
+        "authorId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "authorName": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "authorPhoto": { "type": "string", "maxLength": 500 },
+        "text": { "type": "string", "minLength": 1, "maxLength": 800 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "targetId", "targetType", "authorId", "authorName", "text", "createdAt"]
+    },
+    "Subscription": {
+      "title": "Subscription",
+      "description": "User subscription to a creator or YouTube channel.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "userId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "channelId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "channelName": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "channelPhoto": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "channelId", "channelName", "createdAt"]
+    },
+    "YouTubeLike": {
+      "title": "YouTubeLike",
+      "description": "User like/favorite on a YouTube video watched in the platform, used to personalize the feed.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "userId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "videoId": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "thumbnailUrl": { "type": "string", "maxLength": 600 },
+        "channelTitle": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "category": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "videoId", "title", "channelTitle", "category", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private user preferences and customized feed profile."
+    },
+    "/media/{mediaId}": {
+      "schema": { "$ref": "#/entities/MediaItem" },
+      "description": "Community-uploaded videos and audio tracks."
+    },
+    "/media/{mediaId}/likes/{userId}": {
+      "schema": { "$ref": "#/entities/MediaLike" },
+      "description": "Per-user like document for atomic like counter updates."
+    },
+    "/comments/{commentId}": {
+      "schema": { "$ref": "#/entities/Comment" },
+      "description": "Public comments on community media or YouTube videos."
+    },
+    "/subscriptions/{subId}": {
+      "schema": { "$ref": "#/entities/Subscription" },
+      "description": "User channel/creator subscriptions."
+    },
+    "/yt_likes/{likeId}": {
+      "schema": { "$ref": "#/entities/YouTubeLike" },
+      "description": "User likes on YouTube videos for feed personalization."
+    }
+  }
+}

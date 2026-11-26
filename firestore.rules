@@ -1,0 +1,264 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global safety net: deny all reads and writes by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Core primitives
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidSubId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 200 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'displayName', 'preferredCategories', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'displayName', 'photoURL', 'preferredCategories', 'recentSearches', 'createdAt', 'updatedAt'])
+        && isValidId(data.uid)
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100
+        && (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 500))
+        && data.preferredCategories is list && data.preferredCategories.size() <= 10
+        && (data.preferredCategories.size() == 0 || (data.preferredCategories[0] is string && data.preferredCategories[0].size() <= 60))
+        && (!('recentSearches' in data) || (data.recentSearches is list && data.recentSearches.size() <= 10 && (data.recentSearches.size() == 0 || (data.recentSearches[0] is string && data.recentSearches[0].size() <= 100))))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidMediaItem(data) {
+      return data.keys().hasAll([
+          'id', 'title', 'mediaType', 'sourceType', 'mediaUrl',
+          'category', 'artistOrChannel', 'durationSeconds', 'durationLabel',
+          'authorId', 'authorName', 'viewsCount', 'likesCount', 'commentsCount',
+          'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'title', 'description', 'mediaType', 'sourceType', 'mediaUrl', 'thumbnailUrl',
+          'category', 'artistOrChannel', 'durationSeconds', 'durationLabel', 'tags',
+          'authorId', 'authorName', 'authorPhoto', 'viewsCount', 'likesCount', 'commentsCount',
+          'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.id)
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 160
+        && (!('description' in data) || (data.description is string && data.description.size() <= 2000))
+        && data.mediaType in ['video', 'audio']
+        && data.sourceType in ['upload', 'youtube']
+        && data.mediaUrl is string && data.mediaUrl.size() >= 1 && data.mediaUrl.size() <= 600
+        && (!('thumbnailUrl' in data) || (data.thumbnailUrl is string && data.thumbnailUrl.size() <= 600))
+        && data.category is string && data.category.size() >= 1 && data.category.size() <= 60
+        && data.artistOrChannel is string && data.artistOrChannel.size() >= 1 && data.artistOrChannel.size() <= 100
+        && data.durationSeconds is number && data.durationSeconds >= 0 && data.durationSeconds <= 86400
+        && data.durationLabel is string && data.durationLabel.size() >= 1 && data.durationLabel.size() <= 20
+        && (!('tags' in data) || (data.tags is list && data.tags.size() <= 8 && (data.tags.size() == 0 || (data.tags[0] is string && data.tags[0].size() <= 40))))
+        && isValidId(data.authorId)
+        && data.authorName is string && data.authorName.size() >= 1 && data.authorName.size() <= 100
+        && (!('authorPhoto' in data) || (data.authorPhoto is string && data.authorPhoto.size() <= 500))
+        && data.viewsCount is number && data.viewsCount >= 0
+        && data.likesCount is number && data.likesCount >= 0
+        && data.commentsCount is number && data.commentsCount >= 0
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidMediaLike(data) {
+      return data.keys().hasAll(['userId', 'mediaId', 'createdAt'])
+        && data.keys().hasOnly(['userId', 'mediaId', 'createdAt'])
+        && isValidId(data.userId)
+        && isValidId(data.mediaId)
+        && data.createdAt is timestamp;
+    }
+
+    function isValidComment(data) {
+      return data.keys().hasAll(['id', 'targetId', 'targetType', 'authorId', 'authorName', 'text', 'createdAt'])
+        && data.keys().hasOnly(['id', 'targetId', 'targetType', 'authorId', 'authorName', 'authorPhoto', 'text', 'createdAt'])
+        && isValidId(data.id)
+        && data.targetId is string && data.targetId.size() >= 1 && data.targetId.size() <= 140 && data.targetId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.targetType in ['media', 'youtube']
+        && isValidId(data.authorId)
+        && data.authorName is string && data.authorName.size() >= 1 && data.authorName.size() <= 100
+        && (!('authorPhoto' in data) || (data.authorPhoto is string && data.authorPhoto.size() <= 500))
+        && data.text is string && data.text.size() >= 1 && data.text.size() <= 800
+        && data.createdAt is timestamp;
+    }
+
+    function isValidSubscription(data) {
+      return data.keys().hasAll(['id', 'userId', 'channelId', 'channelName', 'createdAt'])
+        && data.keys().hasOnly(['id', 'userId', 'channelId', 'channelName', 'channelPhoto', 'createdAt'])
+        && isValidSubId(data.id)
+        && isValidId(data.userId)
+        && data.channelId is string && data.channelId.size() >= 1 && data.channelId.size() <= 128
+        && data.channelName is string && data.channelName.size() >= 1 && data.channelName.size() <= 100
+        && (!('channelPhoto' in data) || (data.channelPhoto is string && data.channelPhoto.size() <= 500))
+        && data.createdAt is timestamp;
+    }
+
+    function isValidYouTubeLike(data) {
+      return data.keys().hasAll(['id', 'userId', 'videoId', 'title', 'channelTitle', 'category', 'createdAt'])
+        && data.keys().hasOnly(['id', 'userId', 'videoId', 'title', 'thumbnailUrl', 'channelTitle', 'category', 'createdAt'])
+        && isValidSubId(data.id)
+        && isValidId(data.userId)
+        && isValidId(data.videoId)
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 200
+        && (!('thumbnailUrl' in data) || (data.thumbnailUrl is string && data.thumbnailUrl.size() <= 600))
+        && data.channelTitle is string && data.channelTitle.size() >= 1 && data.channelTitle.size() <= 100
+        && data.category is string && data.category.size() >= 1 && data.category.size() <= 60
+        && data.createdAt is timestamp;
+    }
+
+    // 1. Private User Profiles & Feed Preferences
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if false;
+      allow create: if isVerifiedUser()
+        && isValidId(userId)
+        && isOwner(userId)
+        && isValidUserProfile(incoming())
+        && incoming().uid == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser()
+        && isValidId(userId)
+        && isOwner(userId)
+        && isValidUserProfile(incoming())
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'preferredCategories', 'recentSearches', 'updatedAt']);
+      allow delete: if isOwner(userId) && isValidId(userId);
+    }
+
+    // 2. Community Uploaded Videos & Audio Catalog
+    match /media/{mediaId} {
+      allow get: if isValidId(mediaId);
+      allow list: if true;
+      allow create: if isVerifiedUser()
+        && isValidId(mediaId)
+        && isValidMediaItem(incoming())
+        && incoming().id == mediaId
+        && incoming().authorId == request.auth.uid
+        && incoming().viewsCount == 0
+        && incoming().likesCount == 0
+        && incoming().commentsCount == 0
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser()
+        && isValidId(mediaId)
+        && isValidMediaItem(incoming())
+        && incoming().id == existing().id
+        && incoming().authorId == existing().authorId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          (
+            isOwner(existing().authorId)
+            && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'category', 'tags', 'thumbnailUrl', 'updatedAt'])
+          )
+          || (
+            incoming().diff(existing()).affectedKeys().hasOnly(['viewsCount', 'updatedAt'])
+            && incoming().viewsCount == existing().viewsCount + 1
+          )
+          || (
+            incoming().diff(existing()).affectedKeys().hasOnly(['likesCount', 'updatedAt'])
+            && (
+              (incoming().likesCount == existing().likesCount + 1 && existsAfter(/databases/$(database)/documents/media/$(mediaId)/likes/$(request.auth.uid)))
+              || (incoming().likesCount == existing().likesCount - 1 && !existsAfter(/databases/$(database)/documents/media/$(mediaId)/likes/$(request.auth.uid)))
+            )
+          )
+          || (
+            incoming().diff(existing()).affectedKeys().hasOnly(['commentsCount', 'updatedAt'])
+            && incoming().commentsCount == existing().commentsCount + 1
+          )
+        );
+      allow delete: if isOwner(existing().authorId) && isValidId(mediaId);
+
+      // 3. Per-User Likes Subcollection (Master Gate + Atomicity)
+      match /likes/{userId} {
+        allow get: if isOwner(userId) && isValidId(mediaId) && isValidId(userId);
+        allow list: if isSignedIn() && existing().userId == request.auth.uid;
+        allow create: if isVerifiedUser()
+          && isValidId(mediaId)
+          && isValidId(userId)
+          && isOwner(userId)
+          && isValidMediaLike(incoming())
+          && incoming().userId == request.auth.uid
+          && incoming().mediaId == mediaId
+          && incoming().createdAt == request.time
+          && exists(/databases/$(database)/documents/media/$(mediaId))
+          && getAfter(/databases/$(database)/documents/media/$(mediaId)).data.likesCount == get(/databases/$(database)/documents/media/$(mediaId)).data.likesCount + 1;
+        allow update: if false;
+        allow delete: if isOwner(userId)
+          && isValidId(mediaId)
+          && isValidId(userId)
+          && exists(/databases/$(database)/documents/media/$(mediaId))
+          && getAfter(/databases/$(database)/documents/media/$(mediaId)).data.likesCount == get(/databases/$(database)/documents/media/$(mediaId)).data.likesCount - 1;
+      }
+    }
+
+    // 4. Comments on Media & YouTube Videos
+    match /comments/{commentId} {
+      allow get: if isValidId(commentId);
+      allow list: if true;
+      allow create: if isVerifiedUser()
+        && isValidId(commentId)
+        && isValidComment(incoming())
+        && incoming().id == commentId
+        && incoming().authorId == request.auth.uid
+        && incoming().createdAt == request.time;
+      allow update: if false;
+      allow delete: if isOwner(existing().authorId) && isValidId(commentId);
+    }
+
+    // 5. Channel Subscriptions
+    match /subscriptions/{subId} {
+      allow get: if isSignedIn() && isValidSubId(subId) && isOwner(existing().userId);
+      allow list: if isSignedIn() && existing().userId == request.auth.uid;
+      allow create: if isVerifiedUser()
+        && isValidSubId(subId)
+        && isValidSubscription(incoming())
+        && incoming().id == subId
+        && incoming().userId == request.auth.uid
+        && incoming().createdAt == request.time;
+      allow update: if false;
+      allow delete: if isSignedIn() && isValidSubId(subId) && isOwner(existing().userId);
+    }
+
+    // 6. YouTube Video Likes (for personalized feed)
+    match /yt_likes/{likeId} {
+      allow get: if isSignedIn() && isValidSubId(likeId) && isOwner(existing().userId);
+      allow list: if isSignedIn() && existing().userId == request.auth.uid;
+      allow create: if isVerifiedUser()
+        && isValidSubId(likeId)
+        && isValidYouTubeLike(incoming())
+        && incoming().id == likeId
+        && incoming().userId == request.auth.uid
+        && incoming().createdAt == request.time;
+      allow update: if false;
+      allow delete: if isSignedIn() && isValidSubId(likeId) && isOwner(existing().userId);
+    }
+  }
+}

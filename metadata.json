@@ -1,0 +1,6 @@
+{
+  "name": "SurDrishyo — Video & Audio Streaming",
+  "description": "Video & audio streaming platform with community uploads, live YouTube search, social engagement, customized feeds, and offline audio downloads.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
